@@ -161,11 +161,12 @@ assert.equal(text(calm).trim(), "75%", "余量充足时药丸直接显示剩余�
 assert.ok(json(calm).includes("75% left"), "完整文案仍在 title / aria-label 中");
 assert.ok(text(renderPill(quota, true)).includes("Plenty left"), "弹层顶部横幅先给出「额度充足」的结论");
 assert.ok(!json(renderPill({ ...quota, ...inMs(5 * 60 * 60 * 1000) })).includes("Cookie expires in"), "未到提醒窗口不打扰用户");
+assert.ok(json(calm).includes("--dsw-alias-interactive-bg-hover"), "常态药丸背景复用模型选择器的悬停底色 token");
 const soon = renderPill({ ...quota, ...inMs(90 * 60 * 1000) });
 assert.ok(text(soon).includes("Cookie expiring"), "即将到期时药丸用短词，避免撑爆输入区");
 assert.ok(!text(soon).includes("Cookie expires in"), "药丸短词不复述完整倒计时");
 assert.ok(json(soon).includes("rgba(234,179,8,.10)"), "临近到期使用黄色提示底色");
-assert.ok(json(soon).includes("rgba(234,179,8,.45)"), "临近到期药丸描边随档位着色");
+assert.ok(!json(soon).includes("rgba(234,179,8,.45)"), "药丸不再用描边：告警与常态都只靠底色区分");
 const urgent = renderPill({ ...quota, ...inMs(10 * 60 * 1000) });
 assert.ok(text(urgent).includes("Cookie expiring") && json(urgent).includes("rgba(249,115,22,.10)"), "30 分钟内升级为橙色紧急提示");
 assert.ok(json(urgent).includes("Cookie expires in 10 min"), "完整倒计时仍在 title / aria-label");
