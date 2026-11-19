@@ -2,6 +2,11 @@
 
 以下按发布版本保留当时的功能与验证记录。旧版本的导航、登录方案及兼容性描述不代表当前行为；当前使用方法见 [README](../README.md)。
 
+## 未发布
+
+- **MiMo 无 Token Plan 订阅时显示账户余额**：平台真实的无订阅响应是 `usage: null` + `monthUsage: { percent: 0, items: null }`，旧逻辑只把 `items: []` 当作空分组，导致 `noSubscription` 判不出来、覆盖率降级为 `partial`，纯余额药丸只显示「数据不完整」。现在 `items` 为 `null`（且没有非零百分比）同样算空分组；无订阅且余额可读时 `coverage: "complete"`，药丸直接显示 `console/balance` 的余额。2026-11-19 用真实账号实测 `GET /api/v1/balance` 返回 10.45 CNY，归一化结果为 `subscribed: false` + 余额完整。
+- **自定义 `xiaomi` / `mimo` 路由归并到 MiMo 额度入口**：pi-ai 自定义 provider 常把 MiMo 写作 `xiaomi`，而额度 provider id 固定为 `xiaomi-token-plan-cn`。此前 Host 按「无对应路由」把 MiMo 卡片隐藏、Client 药丸也解析不到条目；现在 `detectConfigured()`、`ROUTE_PROVIDER_ALIAS` 与 `go-panel` 的 `ROUTE_USAGE_ID` 同口径归并，卡片、标签与输入区药丸都能直接显示余额。回归补在 `test-balance-modes.mjs`，`test-go-panel.mjs` 保持两端别名表逐键一致。
+
 ## 1.0.0：一体化额度平台、声明式连接与 New API 一等入口
 
 1.0.0 的主线是把「任意上游的额度读取」平台化：额度接口的 URL 拼接、凭据注入、响应解析、歧义判定与展示配置全部下沉到可组合的模块层，任意上游只需一份声明（适配器配方 + JSON Pointer 映射）或一次探测就能接入药丸与工具，而不是每家上游在宿主核心里写一段专属代码。本节按核心程度排列：先架构底座，再其上的新入口与 UI。

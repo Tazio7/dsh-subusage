@@ -59,6 +59,11 @@ const usage = { data: { usage: { items: [{ name:"plan_total_token",used:100,limi
 assert.equal(normalizeMimo(bal, {data:{planName:"Pro"}}, usage).windows[0].status,"rate-limited");
 assert.equal(normalizeMimo(undefined, {data:{planName:"Pro"}}, usage).windows[0].status,"rate-limited", "余额失败不抹掉套餐耗尽");
 assert.equal(normalizeMimo(bal, { data: null }, { code: 0, data: { usage: { items: [] }, monthUsage: null } }).subscribed, false, "成功返回空用量组与空套餐详情是无套餐证据");
+// 真实平台的无订阅响应：分组是 `{ percent: 0, items: null }`，不是空数组；必须判为已确认无订阅，
+// 否则纯余额条目会被降级成 partial（药丸只显示「数据不完整」）。
+const realNoPlan = normalizeMimo(bal, { code: 0, data: { planCode: null, planName: null } }, { code: 0, data: { usage: null, monthUsage: { percent: 0, items: null } } });
+assert.equal(realNoPlan.windows.length, 0); assert.equal(realNoPlan.subscribed, false); assert.equal(realNoPlan.coverage, "complete");
+assert.equal(realNoPlan.extras.find(extra => extra.kind === "balance").value, "0.50 CNY");
 assert.equal(normalizeMimo(bal, { code: 500, data: null }, zero).coverage, "partial", "业务失败码不能当成空套餐");
 assert.equal(normalizeMimo({data:{balance:"invalid"}}, {data:{planName:"Pro"}}, usage).balanceOk, false, "非法辅助余额不拖掉有效用量、不伪造零余额");
 console.log("PASS MiMo 零容量不造100%余量、无订阅显示余额、读取失败与耗尽分开");
