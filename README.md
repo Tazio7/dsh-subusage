@@ -170,7 +170,7 @@ OFM 全渠道查询可传 `providers: ["ofm"]`。独立 Trae、WorkBuddy 及 OFM
 |---|---|---|---|---|
 | DeepSeek API | `deepseek` | 余额（账户） | Bearer，与推理同一把 Key | 开 |
 | DeepSeek 账号 | `deepseek-account` | 余额（本机账号充值） | 复用 DSH `deepseekAccount` 登录态，无独立 Key | 开 |
-| Z.ai（中国） | `zai-coding-cn` | 订阅窗口 | Bearer（团队档另加组织 / 项目请求头） | 开 |
+| Z.ai（中国） | `zai-coding-cn` | 订阅窗口 + 账户余额 | Bearer（团队档另加组织 / 项目请求头） | 开 |
 | Kimi Coding | `kimi-coding` | 订阅窗口 | Bearer | 开 |
 | Xiaomi MiMo | `xiaomi-token-plan-cn` | 周期额度池 | 官方平台 Cookie（含登录流程与手机扫码登录） | 开 |
 | OpenCode Go | `opencode-go` | 订阅窗口 | Bearer | 开 |
@@ -217,6 +217,7 @@ OFM 全渠道查询可传 `providers: ["ofm"]`。独立 Trae、WorkBuddy 及 OFM
 | 火山方舟 Coding Plan（个人版，`arkcli-coding-plan`） | session / weekly / monthly 三个窗口 | 同一组 AK/SK 直连 `GetCodingPlanUsage`，HTTP 200 |
 | Kimi Coding | 5 小时 / 周 / 月窗口 | 真实 Key |
 | OpenCode Go | 2026-10-25 真机只读：`GET https://opencode.ai/zen/go/v1/usage` **HTTP 200**，三窗 rolling 3% / week 97% / month 56%（重置 2026-10-25 / 2026-10-26 / 2026-11-13），`state=ok`、`coverage=complete`，用时约 0.9 秒 | 本机 DSH 凭据库里的 `OPENCODE_GO_API_KEY`（desktop profile 该路由的 `apiKeyEnv`）；0.16.2 修复引用名之前，同一份凭据只会报「无凭据」 |
+| Z.ai（中国） | 2026-11-20 真机只读：`GET https://open.bigmodel.cn/api/monitor/usage/quota/limit?type=1` **HTTP 200**（`level=pro`，TOKENS / TIME 窗口）；同一把 Key 调 `GET /api/biz/account/query-customer-account-report` **HTTP 200**，`availableBalance` 13.39 CNY。两个端点独立降级：退订后额度无窗口时只显示余额 | `ZAI_CODING_CN_API_KEY`（`~/.dsh/.credentials.yaml` 的 `refs`），Bearer 直接用模型 Key |
 | 小米 MiMo | 余额 + 套餐额度 | 真实平台会话 Cookie（含自动登录；手机上可用小米账号扫码登录，全程不需要浏览器） |
 | Command Code | 月额度 | 提供方插件的凭据链 |
 | SuperGrok | 统一周池 + 加量余额 | 真实 `~/.grok/auth.json` |
@@ -247,7 +248,7 @@ OFM 全渠道查询可传 `providers: ["ofm"]`。独立 Trae、WorkBuddy 及 OFM
 
 其余提供商**只经过桩测试**——响应形态取自公开文档、第三方实现或抓包，**没有在真实账号上跑通过**：
 
-> Z.ai（中国与国际）、MiniMax（中国与国际）、Synthetic、NanoGPT、SiliconFlow、DeepSeek API、DeepSeek 账号、OpenRouter、Novita、Hyperbolic、DeepInfra、Chutes、Ollama Cloud、Vercel AI Gateway、ZenMux、LiteLLM，以及火山方舟的**团队版席位**。
+> Z.ai（国际）、MiniMax（中国与国际）、Synthetic、NanoGPT、SiliconFlow、DeepSeek API、DeepSeek 账号、OpenRouter、Novita、Hyperbolic、DeepInfra、Chutes、Ollama Cloud、Vercel AI Gateway、ZenMux、LiteLLM，以及火山方舟的**团队版席位**。
 
 它们可能可用，也可能因为接口变更、字段差异或权限要求而失败。上表也只是既有账号、当时版本的验证记录，不是持续可用性保证。
 

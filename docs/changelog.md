@@ -2,6 +2,13 @@
 
 以下按发布版本保留当时的功能与验证记录。旧版本的导航、登录方案及兼容性描述不代表当前行为；当前使用方法见 [README](../README.md)。
 
+## 未发布：Z.ai（中国）账户余额
+
+- **退订 Coding Plan 后仍能显示余额**：`zai-coding-cn` 并行读取两个独立数据源——Coding Plan 额度窗口（`/api/monitor/usage/quota/limit`）与控制台财务中心余额（`/api/biz/account/query-customer-account-report`，Bearer 模型 Key）。两者互不拖累：余额端点失败不影响窗口，额度端点无窗口（退订常态）或 401/403（Key 有效但无监控权限）时回落到纯余额药丸，不再报「无法解析」或画 0% 空卡片；只有两边都读不到才判失败。
+- 余额取 `availableBalance`（已扣冻结），缺失时回落到 `balance`，固定按 CNY 展示（平台以人民币计价，响应不带币种）；冻结余额非零时单列说明。归一化在 `lib/providers/subscriptions.js` 的 `normalizeZaiBalance`，与 `normalizeZai` 分开。
+- 真机验证（2026-11-20）：同一把 `ZAI_CODING_CN_API_KEY` 读取额度 HTTP 200（`level=pro`）与余额 13.39 CNY；服务层端到端返回 `state=ok`、窗口 5h/week、`extras=[plan:pro, balance:13.39 CNY]`。
+- 回归：新增 `tests/test-zai-balance.mjs`（归一化、字符串/数字金额、冻结说明、四种降级组合）；`tests/test-host-service.mjs` 的请求计数按「一次取数 = 两个端点」更新。
+
 ## 1.0.0：一体化额度平台、声明式连接与 New API 一等入口
 
 1.0.0 的主线是把「任意上游的额度读取」平台化：额度接口的 URL 拼接、凭据注入、响应解析、歧义判定与展示配置全部下沉到可组合的模块层，任意上游只需一份声明（适配器配方 + JSON Pointer 映射）或一次探测就能接入药丸与工具，而不是每家上游在宿主核心里写一段专属代码。本节按核心程度排列：先架构底座，再其上的新入口与 UI。

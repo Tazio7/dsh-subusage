@@ -27,7 +27,7 @@
 |---|---|---|
 | DeepSeek API（`deepseek`） | 无窗口（余额型） | 账户余额（`balance_infos` 的币种与总额）；`is_available=false` 提示充值，不显示成 0 |
 | DeepSeek 账号（`deepseek-account`） | 无窗口（余额型） | 复用本机 `deepseekAccount` 服务返回的充值余额；默认开启、无独立 Key。别名 `deepseek-official` 指向本条 |
-| Z.ai（中国 / 国际） | 5 小时、每周（按响应） | Token / Credits 配额、套餐档 |
+| Z.ai（中国 / 国际） | 5 小时、每周（按响应） | Token / Credits 配额、套餐档；中国区额外读账户余额（`query-customer-account-report`，退订后只剩余额） |
 | Kimi | 5 小时 + 7 天或月度（按账户下发） | 已用百分比、套餐档 |
 | Xiaomi MiMo | 本周期额度池 | 用量明细、重置时间、套餐与余额。**没有窗口时（无订阅或套餐读不到）才回落到纯余额药丸**，套餐仍可读时窗口优先 |
 | OpenCode Go | 滚动、每周、每月 | 已用百分比、重置时间 |

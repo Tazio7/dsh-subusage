@@ -163,24 +163,25 @@ assert(!JSON.stringify(await nested.service.refresh({ providerIds: [M], force: f
 for (const balance of ["REFLECTED-TOKEN", "", "NaN", "Infinity", "0x10"]) assert.throws(() => normalizeMimo({ data: { balance } }, {}, {}));
 // 并发普通/force 合并；设置改变阻止旧请求写缓存。
 const concurrent = harness({ keys: { [Z]: "key1" }, keyModes: { [Z]: "manual" } });
-let release; concurrent.respond(() => new Promise(resolve => { release = resolve; }));
+let releases = []; concurrent.respond(() => new Promise(resolve => { releases.push(resolve); }));
 const first = concurrent.service.refresh({ providerIds: [Z], force: false });
 await new Promise(resolve => setTimeout(resolve, 0));
 const second = concurrent.service.refresh({ providerIds: [Z], force: true });
-await new Promise(resolve => setTimeout(resolve, 0)); assert.equal(concurrent.calls.length, 1);
-release(zBody); await Promise.all([first, second]);
+await new Promise(resolve => setTimeout(resolve, 0)); assert.equal(concurrent.calls.length, 2, "Z.ai 一次取数 = 额度 + 余额两个端点，并发刷新仍只合并成一组");
+for (const resolve of releases.splice(0)) resolve(zBody); await Promise.all([first, second]);
 concurrent.tick(61000);
 const old = concurrent.service.refresh({ providerIds: [Z], force: true }); await new Promise(resolve => setTimeout(resolve, 0));
 await concurrent.service.save({ providerId: Z, keyUpdate: { action: "replace", value: "key2" } });
-const releaseOld = release; concurrent.respond(() => ({ data: { limits: [{ type: "CREDIT_LIMIT", unit: 3, percentage: 80 }] } }));
-await concurrent.service.refresh({ providerIds: [Z], force: true }); releaseOld(zBody); const oldResult = await old;
+const releaseOld = releases; releases = [];
+concurrent.respond(() => ({ data: { limits: [{ type: "CREDIT_LIMIT", unit: 3, percentage: 80 }] } }));
+await concurrent.service.refresh({ providerIds: [Z], force: true }); for (const resolve of releaseOld) resolve(zBody); const oldResult = await old;
 assert.equal(oldResult.entries[0].errorCode, "subusage/config-changed"); assert.equal(oldResult.entries[0].windows, undefined);
 assert.equal(oldResult.settings.revision, (await concurrent.service.refresh({ providerIds: [], force: false })).settings.revision);
 assert.equal((await concurrent.service.refresh({ providerIds: [Z], force: false })).entries[0].windows[0].percent, 80);
 // reset 到期可以越过TTL/backoff触发新尝试。
 const reset = harness({ keys: { [Z]: "x" } });
 reset.respond(() => ({ data: { limits: [{ type: "CREDIT_LIMIT", unit: 3, percentage: 100, nextResetTime: Date.parse("2026-01-01T00:00:10Z") }] } }));
-await reset.service.refresh({ providerIds: [Z], force: false }); reset.tick(11000); await reset.service.refresh({ providerIds: [Z], force: false }); assert.equal(reset.calls.length, 2);
+await reset.service.refresh({ providerIds: [Z], force: false }); reset.tick(11000); await reset.service.refresh({ providerIds: [Z], force: false }); assert.equal(reset.calls.length, 4, "两次刷新各请求额度 + 余额");
 // 结构边界、99.5/raw判定、明确新版fixture、同级不连坐。
 for (const key of ["usages", "usage", "limits"]) {
  const windows = normalizeKimi({ [key]: { limit_5h: { used_ratio: .995 }, limit_7d: { used_ratio: .9999 } } });
